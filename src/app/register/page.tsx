@@ -12,6 +12,7 @@ export default function RegisterPage() {
     })
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
+    const [success, setSuccess] = useState(false)
 
     const handleRegister = async (e: FormEvent) => {
         e.preventDefault()
@@ -24,19 +25,27 @@ export default function RegisterPage() {
                 password: formData.password,
             })
             if (signUpError) throw signUpError
-            if (!data.user) throw new Error('Registration failed')
+            if (!data.user) throw new Error('No user returned — please try again')
 
-            // Create profile
-            const { error: profileError } = await supabase.from('student_profiles').insert({
-                id: data.user.id,
-                name: formData.name,
-                register_number: formData.registerNumber || null,
-                role: 'student',
-                streak: 0,
-            })
-            if (profileError) throw profileError
-
-            router.push('/dashboard')
+            if (data.session) {
+                // Email confirm OFF — session available, insert profile immediately
+                const { error: profileError } = await supabase.from('student_profiles').insert({
+                    id: data.user.id,
+                    name: formData.name,
+                    register_number: formData.registerNumber || null,
+                    role: 'student',
+                    streak: 0,
+                })
+                if (profileError) throw profileError
+                router.push('/dashboard')
+            } else {
+                // Email confirm ON — store pending profile, show success screen
+                localStorage.setItem('pending_profile', JSON.stringify({
+                    name: formData.name,
+                    register_number: formData.registerNumber || null,
+                }))
+                setSuccess(true)
+            }
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : 'Registration failed')
         } finally {
@@ -57,75 +66,92 @@ export default function RegisterPage() {
                     Join and start your CTV preparation journey
                 </p>
 
-                {error && (
-                    <div className="alert alert-error">
-                        <svg width={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                            <circle cx="12" cy="12" r="10" /><path d="M12 8v4M12 16h.01" />
-                        </svg>
-                        {error}
+                {success ? (
+                    <div style={{ textAlign: 'center', padding: '24px 0' }}>
+                        <div style={{ fontSize: 48, marginBottom: 16 }}>📧</div>
+                        <h3 style={{ color: 'var(--text-primary)', marginBottom: 8 }}>Check your email!</h3>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.6 }}>
+                            We sent a confirmation link to <strong>{formData.email}</strong>.<br />
+                            Click it to activate your account, then sign in.
+                        </p>
+                        <Link href="/login" className="btn btn-primary btn-full" style={{ marginTop: 20 }}>
+                            Go to Sign In
+                        </Link>
                     </div>
+                ) : (
+                    <>
+                        {error && (
+                            <div className="alert alert-error">
+                                <svg width={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                                    <circle cx="12" cy="12" r="10" /><path d="M12 8v4M12 16h.01" />
+                                </svg>
+                                {error}
+                            </div>
+                        )}
+
+                        <form onSubmit={handleRegister}>
+                            <div className="form-group">
+                                <label className="form-label">Full Name</label>
+                                <input
+                                    className="form-input"
+                                    type="text"
+                                    placeholder="Your full name"
+                                    value={formData.name}
+                                    onChange={e => setFormData(f => ({ ...f, name: e.target.value }))}
+                                    required
+                                    autoFocus
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Register Number <span style={{ color: 'var(--text-muted)' }}>(optional)</span></label>
+                                <input
+                                    className="form-input"
+                                    type="text"
+                                    placeholder="e.g. 2021CS001"
+                                    value={formData.registerNumber}
+                                    onChange={e => setFormData(f => ({ ...f, registerNumber: e.target.value }))}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Email Address</label>
+                                <input
+                                    className="form-input"
+                                    type="email"
+                                    placeholder="you@college.edu"
+                                    value={formData.email}
+                                    onChange={e => setFormData(f => ({ ...f, email: e.target.value }))}
+                                    required
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Password</label>
+                                <input
+                                    className="form-input"
+                                    type="password"
+                                    placeholder="Min. 6 characters"
+                                    value={formData.password}
+                                    onChange={e => setFormData(f => ({ ...f, password: e.target.value }))}
+                                    required
+                                />
+                            </div>
+                            <button
+                                type="submit"
+                                className="btn btn-primary btn-full btn-lg"
+                                disabled={loading}
+                                style={{ marginTop: 8 }}
+                            >
+                                {loading ? <span className="spinner" /> : null}
+                                {loading ? 'Creating account...' : 'Create Account'}
+                            </button>
+                        </form>
+
+                        <div className="auth-switch">
+                            Already have an account?{' '}
+                            <Link href="/login">Sign in</Link>
+                        </div>
+                    </>
                 )}
 
-                <form onSubmit={handleRegister}>
-                    <div className="form-group">
-                        <label className="form-label">Full Name</label>
-                        <input
-                            className="form-input"
-                            type="text"
-                            placeholder="Your full name"
-                            value={formData.name}
-                            onChange={e => setFormData(f => ({ ...f, name: e.target.value }))}
-                            required
-                            autoFocus
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label className="form-label">Register Number <span style={{ color: 'var(--text-muted)' }}>(optional)</span></label>
-                        <input
-                            className="form-input"
-                            type="text"
-                            placeholder="e.g. 2021CS001"
-                            value={formData.registerNumber}
-                            onChange={e => setFormData(f => ({ ...f, registerNumber: e.target.value }))}
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label className="form-label">Email Address</label>
-                        <input
-                            className="form-input"
-                            type="email"
-                            placeholder="you@college.edu"
-                            value={formData.email}
-                            onChange={e => setFormData(f => ({ ...f, email: e.target.value }))}
-                            required
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label className="form-label">Password</label>
-                        <input
-                            className="form-input"
-                            type="password"
-                            placeholder="Min. 6 characters"
-                            value={formData.password}
-                            onChange={e => setFormData(f => ({ ...f, password: e.target.value }))}
-                            required
-                        />
-                    </div>
-                    <button
-                        type="submit"
-                        className="btn btn-primary btn-full btn-lg"
-                        disabled={loading}
-                        style={{ marginTop: 8 }}
-                    >
-                        {loading ? <span className="spinner" /> : null}
-                        {loading ? 'Creating account...' : 'Create Account'}
-                    </button>
-                </form>
-
-                <div className="auth-switch">
-                    Already have an account?{' '}
-                    <Link href="/login">Sign in</Link>
-                </div>
                 <div style={{ textAlign: 'center', marginTop: 20, fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.7 }}>
                     🍊 Built with orange juice &amp; poor decisions<br />
                     <span style={{ color: 'var(--accent-light)', fontWeight: 600 }}>Jaiyandh A S</span>
