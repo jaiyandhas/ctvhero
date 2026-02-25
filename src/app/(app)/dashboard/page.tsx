@@ -36,7 +36,7 @@ export default function DashboardPage() {
             const bySubject: Record<string, { total: number; correct: number }> = {}
             let correct = 0
 
-            for (const row of data as { is_correct: boolean; questions: { subject: string } | null }[]) {
+            for (const row of (data as unknown) as { is_correct: boolean; questions: { subject: string } | null }[]) {
                 const subject = row.questions?.subject || 'Unknown'
                 if (!bySubject[subject]) bySubject[subject] = { total: 0, correct: 0 }
                 bySubject[subject].total++
