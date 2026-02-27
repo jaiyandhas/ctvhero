@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, Suspense } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 
@@ -19,40 +20,82 @@ interface Question {
     difficulty: string
 }
 
-const SUBJECTS = ['All Subjects', 'Computer Organization', 'Digital Logic', 'Data Structures']
+const SUBJECTS = ['All Subjects', 'Computer Organization', 'Digital Logic', 'Data Structures', 'Operating Systems']
 const DIFFICULTIES = ['All Levels', 'Easy', 'Medium', 'Hard']
 const OPTION_LABELS = ['A', 'B', 'C', 'D']
 
-export default function PracticePage() {
+function PracticeContent() {
     const { user, profile, refreshProfile } = useAuth()
+    const router = useRouter()
+    const searchParams = useSearchParams()
+
+    // Read URL params (e.g. /practice?subject=Digital+Logic&mode=wrong_only)
+    const urlSubject = searchParams.get('subject') ?? ''
+    const urlMode = searchParams.get('mode') ?? ''
+
     const [questions, setQuestions] = useState<Question[]>([])
     const [current, setCurrent] = useState(0)
     const [selected, setSelected] = useState<string | null>(null)
     const [submitted, setSubmitted] = useState(false)
     const [loading, setLoading] = useState(true)
-    const [subject, setSubject] = useState('All Subjects')
+
+    // Filters — seeded from URL params
+    const [subject, setSubject] = useState(SUBJECTS.includes(urlSubject) ? urlSubject : 'All Subjects')
     const [difficulty, setDifficulty] = useState('All Levels')
+    const [mode, setMode] = useState<'normal' | 'wrong_only'>(urlMode === 'wrong_only' ? 'wrong_only' : 'normal')
+
     const [bookmarked, setBookmarked] = useState(false)
     const [streakCount, setStreakCount] = useState(0)
     const [answeredCount, setAnsweredCount] = useState(0)
     const [correctCount, setCorrectCount] = useState(0)
 
     const loadQuestions = useCallback(async () => {
+        if (!user) return
         setLoading(true)
-        let query = supabase.from('questions').select('*')
-        if (subject !== 'All Subjects') query = query.eq('subject', subject)
-        if (difficulty !== 'All Levels') query = query.eq('difficulty', difficulty)
-        const { data } = await query.limit(200)
-        if (data) {
-            // Shuffle
-            const shuffled = [...data].sort(() => Math.random() - 0.5)
-            setQuestions(shuffled as Question[])
-        }
         setCurrent(0)
         setSelected(null)
         setSubmitted(false)
+
+        if (mode === 'wrong_only') {
+            // Fetch IDs of questions the user got wrong
+            let wrongQuery = supabase
+                .from('question_attempts')
+                .select('question_id')
+                .eq('student_id', user.id)
+                .eq('is_correct', false)
+
+            const { data: wrongAttempts } = await wrongQuery
+            if (!wrongAttempts || wrongAttempts.length === 0) {
+                setQuestions([])
+                setLoading(false)
+                return
+            }
+
+            const wrongIds = Array.from(new Set(wrongAttempts.map((a: { question_id: string }) => a.question_id)))
+
+            let qQuery = supabase
+                .from('questions')
+                .select('*')
+                .in('id', wrongIds)
+
+            if (subject !== 'All Subjects') qQuery = qQuery.eq('subject', subject)
+            if (difficulty !== 'All Levels') qQuery = qQuery.eq('difficulty', difficulty)
+
+            const { data } = await qQuery
+            if (data) {
+                setQuestions([...data as Question[]].sort(() => Math.random() - 0.5))
+            }
+        } else {
+            let query = supabase.from('questions').select('*')
+            if (subject !== 'All Subjects') query = query.eq('subject', subject)
+            if (difficulty !== 'All Levels') query = query.eq('difficulty', difficulty)
+            const { data } = await query.limit(200)
+            if (data) {
+                setQuestions([...data as Question[]].sort(() => Math.random() - 0.5))
+            }
+        }
         setLoading(false)
-    }, [subject, difficulty])
+    }, [user, subject, difficulty, mode])
 
     useEffect(() => { loadQuestions() }, [loadQuestions])
 
@@ -79,7 +122,6 @@ export default function PracticePage() {
         setAnsweredCount(c => c + 1)
         if (isCorrect) setCorrectCount(c => c + 1)
 
-        // Record attempt
         await supabase.from('question_attempts').insert({
             student_id: user.id,
             question_id: q.id,
@@ -87,7 +129,6 @@ export default function PracticePage() {
             is_correct: isCorrect,
         })
 
-        // Update streak in profile
         if (isCorrect) {
             const newStreak = (profile?.streak || 0) + 1
             setStreakCount(newStreak)
@@ -130,13 +171,24 @@ export default function PracticePage() {
 
     const optionTexts = q ? [q.option_a, q.option_b, q.option_c, q.option_d] : []
 
+    const handleModeToggle = (newMode: 'normal' | 'wrong_only') => {
+        setMode(newMode)
+        // Update URL cleanly
+        const params = new URLSearchParams()
+        if (subject !== 'All Subjects') params.set('subject', subject)
+        if (newMode === 'wrong_only') params.set('mode', 'wrong_only')
+        router.replace(params.toString() ? `/practice?${params}` : '/practice')
+    }
+
     return (
         <div>
             <div className="page-header">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+                <div className="page-header-inner">
                     <div>
                         <h1 className="page-title">Practice Mode</h1>
-                        <p className="page-subtitle">GATE-style MCQ — one question at a time</p>
+                        <p className="page-subtitle">
+                            {mode === 'wrong_only' ? '🔁 Retrying wrong answers' : 'GATE-style MCQ — one question at a time'}
+                        </p>
                     </div>
                     {streakCount > 0 && (
                         <div className="streak-badge">🔥 {streakCount} streak</div>
@@ -146,7 +198,24 @@ export default function PracticePage() {
 
             <div className="page-body">
                 {/* Filters */}
-                <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
+                    {/* Mode toggle */}
+                    <div className="tabs" style={{ background: 'var(--bg-secondary)', borderRadius: 8, padding: 4, display: 'flex', gap: 4 }}>
+                        <button
+                            className={`tab-btn${mode === 'normal' ? ' active' : ''}`}
+                            onClick={() => handleModeToggle('normal')}
+                        >
+                            Normal
+                        </button>
+                        <button
+                            className={`tab-btn${mode === 'wrong_only' ? ' active' : ''}`}
+                            onClick={() => handleModeToggle('wrong_only')}
+                            style={mode === 'wrong_only' ? { color: 'var(--error)' } : {}}
+                        >
+                            🔁 Retry Wrong
+                        </button>
+                    </div>
+
                     <select
                         className="form-select"
                         style={{ width: 200 }}
@@ -177,8 +246,21 @@ export default function PracticePage() {
                     <div className="loading-overlay"><div className="spinner" /></div>
                 ) : questions.length === 0 ? (
                     <div className="empty-state">
-                        <h3>No questions found</h3>
-                        <p>Try changing the subject or difficulty filter</p>
+                        {mode === 'wrong_only' ? (
+                            <>
+                                <span style={{ fontSize: 36 }}>🎉</span>
+                                <h3>No wrong answers found!</h3>
+                                <p>{subject !== 'All Subjects' ? `No incorrect answers for ${subject}` : 'You\'ve got a clean slate — great job!'}</p>
+                                <button className="btn btn-primary btn-sm" onClick={() => handleModeToggle('normal')}>
+                                    Practice normally →
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <h3>No questions found</h3>
+                                <p>Try changing the subject or difficulty filter</p>
+                            </>
+                        )}
                     </div>
                 ) : (
                     <>
@@ -287,5 +369,17 @@ export default function PracticePage() {
                 )}
             </div>
         </div>
+    )
+}
+
+export default function PracticePage() {
+    return (
+        <Suspense fallback={
+            <div className="loading-overlay" style={{ minHeight: '100vh' }}>
+                <div className="spinner" />
+            </div>
+        }>
+            <PracticeContent />
+        </Suspense>
     )
 }

@@ -24,22 +24,36 @@ export default function RegisterPage() {
                 email: formData.email,
                 password: formData.password,
             })
+
             if (signUpError) throw signUpError
             if (!data.user) throw new Error('No user returned — please try again')
 
+            // When confirm email is off, Supabase auth.signUp with existing email 
+            // returns success but with zero identities
+            if (data.user.identities && data.user.identities.length === 0) {
+                throw new Error('An account with this email already exists. Please sign in.')
+            }
+
             // Create profile immediately (session is available since confirm is OFF)
-            const { error: profileError } = await supabase.from('student_profiles').insert({
+            // Use UPSERT so if they failed halfway previously, they don't get a primary key error
+            const { error: profileError } = await supabase.from('student_profiles').upsert({
                 id: data.user.id,
                 name: formData.name,
                 register_number: formData.registerNumber || null,
                 role: 'student',
                 streak: 0,
-            })
-            if (profileError) throw profileError
+            }, { onConflict: 'id' })
 
+            if (profileError) {
+                // To avoid confusing "duplicate key" errors from PG, give a simple message
+                console.error("Profile creation error:", profileError)
+                throw new Error('Failed to create user profile. Please try again.')
+            }
+
+            // Since confirm email is OFF, user is signed in automatically. Go to dashboard.
             router.push('/dashboard')
         } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : 'Registration failed')
+            setError(err instanceof Error ? err.message : 'Registration failed. Please check your details and try again.')
         } finally {
             setLoading(false)
         }

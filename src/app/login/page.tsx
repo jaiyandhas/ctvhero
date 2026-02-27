@@ -17,12 +17,26 @@ export default function LoginPage() {
         setError('')
         setLoading(true)
         try {
-            const { error } = await supabase.auth.signInWithPassword({ email, password })
-            if (error) throw error
+            const timeoutPromise = new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error('Request timed out — please check your internet connection.')), 15000)
+            )
+            const loginPromise = supabase.auth.signInWithPassword({ email, password })
+            const { error: authError } = await Promise.race([loginPromise, timeoutPromise])
+
+            if (authError) {
+                // Supabase AuthError has .message but isn't instanceof Error
+                let errorMessage = authError.message
+                if (errorMessage.toLowerCase().includes('invalid login credentials')) {
+                    errorMessage = 'Incorrect email or password. Please try again.'
+                } else if (errorMessage.toLowerCase().includes('email not confirmed')) {
+                    errorMessage = 'Please confirm your email address before signing in.'
+                }
+                throw new Error(errorMessage)
+            }
             router.push('/dashboard')
         } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : 'Login failed')
-        } finally {
+            const msg = err instanceof Error ? err.message : 'Login failed. Please try again later.'
+            setError(msg)
             setLoading(false)
         }
     }

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 
@@ -18,8 +19,16 @@ interface SubjectRow {
     accuracy: number
 }
 
+const SUBJECT_EMOJIS: Record<string, string> = {
+    'Computer Organization': '🖥️',
+    'Digital Logic': '⚡',
+    'Data Structures': '🌲',
+    'Operating Systems': '⚙️',
+}
+
 export default function DashboardPage() {
     const { user, profile } = useAuth()
+    const router = useRouter()
     const [stats, setStats] = useState<Stats>({ total: 0, correct: 0, wrong: 0, bySubject: {} })
     const [loading, setLoading] = useState(true)
 
@@ -60,10 +69,15 @@ export default function DashboardPage() {
 
     const weakTopics = subjectRows.filter(s => s.accuracy < 50 && s.total >= 3)
 
+    // Available subjects (including ones not yet attempted)
+    const allSubjects = ['Computer Organization', 'Digital Logic', 'Data Structures', 'Operating Systems']
+    const subjectsWithData = new Set(subjectRows.map(r => r.subject))
+    const notStartedSubjects = allSubjects.filter(s => !subjectsWithData.has(s))
+
     return (
         <div>
             <div className="page-header">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+                <div className="page-header-inner">
                     <div>
                         <h1 className="page-title">
                             Welcome back, {profile?.name?.split(' ')[0]} 👋
@@ -134,6 +148,68 @@ export default function DashboardPage() {
                             </div>
                         </div>
 
+                        {/* Quick Practice — Subjects */}
+                        <div className="card" style={{ marginBottom: 24 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                                <h3>📚 Quick Practice by Subject</h3>
+                                <button
+                                    className="btn btn-primary btn-sm"
+                                    onClick={() => router.push('/practice')}
+                                >
+                                    Practice All →
+                                </button>
+                            </div>
+                            <div className="grid-2" style={{ gap: 10 }}>
+                                {allSubjects.map(subject => {
+                                    const row = subjectRows.find(r => r.subject === subject)
+                                    const acc = row?.accuracy ?? null
+                                    const attempted = row?.total ?? 0
+                                    return (
+                                        <div key={subject} className="subject-practice-card">
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
+                                                <span style={{ fontSize: 22 }}>{SUBJECT_EMOJIS[subject] ?? '📖'}</span>
+                                                <div style={{ minWidth: 0 }}>
+                                                    <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{subject}</div>
+                                                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>
+                                                        {attempted === 0 ? 'Not started' : `${attempted} attempted · ${acc}% accuracy`}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                                                <button
+                                                    className="btn btn-secondary btn-sm"
+                                                    onClick={() => router.push(`/practice?subject=${encodeURIComponent(subject)}`)}
+                                                >
+                                                    Practice
+                                                </button>
+                                                {attempted > 0 && (
+                                                    <button
+                                                        className="btn btn-sm"
+                                                        style={{ background: 'var(--error-bg)', color: 'var(--error)', border: '1px solid rgba(239,68,68,0.25)' }}
+                                                        onClick={() => router.push(`/practice?subject=${encodeURIComponent(subject)}&mode=wrong_only`)}
+                                                        title="Retry wrong answers for this subject"
+                                                    >
+                                                        Retry Wrong
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                            {notStartedSubjects.length < allSubjects.length && stats.wrong > 0 && (
+                                <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+                                    <button
+                                        className="btn btn-sm"
+                                        style={{ background: 'var(--error-bg)', color: 'var(--error)', border: '1px solid rgba(239,68,68,0.25)' }}
+                                        onClick={() => router.push('/practice?mode=wrong_only')}
+                                    >
+                                        🔁 Retry All Wrong Answers ({stats.wrong})
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
                         <div className="grid-2" style={{ gap: 24 }}>
                             {/* Subject-wise */}
                             <div className="card">
@@ -201,17 +277,31 @@ export default function DashboardPage() {
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                                         {weakTopics.map(t => (
                                             <div key={t.subject}
-                                                style={{ padding: '12px 14px', background: 'var(--error-bg)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(239,68,68,0.2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                <div>
-                                                    <div style={{ fontWeight: 500, fontSize: 14, color: 'var(--text-primary)' }}>{t.subject}</div>
-                                                    <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{t.total} attempted</div>
+                                                style={{ padding: '12px 14px', background: 'var(--error-bg)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(239,68,68,0.2)' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                                                    <div>
+                                                        <div style={{ fontWeight: 500, fontSize: 14, color: 'var(--text-primary)' }}>{t.subject}</div>
+                                                        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{t.total} attempted</div>
+                                                    </div>
+                                                    <span className="badge badge-error">{t.accuracy}%</span>
                                                 </div>
-                                                <span className="badge badge-error">{t.accuracy}%</span>
+                                                <div style={{ display: 'flex', gap: 6 }}>
+                                                    <button
+                                                        className="btn btn-sm btn-secondary"
+                                                        onClick={() => router.push(`/practice?subject=${encodeURIComponent(t.subject)}`)}
+                                                    >
+                                                        Practice →
+                                                    </button>
+                                                    <button
+                                                        className="btn btn-sm"
+                                                        style={{ background: 'rgba(239,68,68,0.15)', color: 'var(--error)', border: '1px solid rgba(239,68,68,0.3)' }}
+                                                        onClick={() => router.push(`/practice?subject=${encodeURIComponent(t.subject)}&mode=wrong_only`)}
+                                                    >
+                                                        🔁 Retry Wrong
+                                                    </button>
+                                                </div>
                                             </div>
                                         ))}
-                                        <a href="/practice" className="btn btn-secondary btn-sm" style={{ marginTop: 4 }}>
-                                            Practice weak topics →
-                                        </a>
                                     </div>
                                 )}
                             </div>
