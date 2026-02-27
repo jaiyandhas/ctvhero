@@ -99,7 +99,7 @@ export default function RegisterPage() {
                         <input
                             className="form-input"
                             type="text"
-                            placeholder="e.g. 2021CS001"
+                            placeholder="e.g. 23CDR060"
                             value={formData.registerNumber}
                             onChange={e => setFormData(f => ({ ...f, registerNumber: e.target.value }))}
                         />
@@ -109,7 +109,7 @@ export default function RegisterPage() {
                         <input
                             className="form-input"
                             type="email"
-                            placeholder="you@college.edu"
+                            placeholder="your@kongu.edu"
                             value={formData.email}
                             onChange={e => setFormData(f => ({ ...f, email: e.target.value }))}
                             required

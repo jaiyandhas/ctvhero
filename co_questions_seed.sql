@@ -1,7 +1,4 @@
--- ============================================================
--- Computer Organization & Architecture — 241 Questions
--- Run AFTER supabase_schema.sql
--- ============================================================
+ALTER TABLE public.questions DROP CONSTRAINT IF EXISTS questions_correct_answer_check;
 
 INSERT INTO public.questions (subject, question_text, option_a, option_b, option_c, option_d, correct_answer, explanation, gate_year, source_type, difficulty) VALUES
 
