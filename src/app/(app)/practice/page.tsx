@@ -48,6 +48,7 @@ function PracticeContent() {
     const [streakCount, setStreakCount] = useState(0)
     const [answeredCount, setAnsweredCount] = useState(0)
     const [correctCount, setCorrectCount] = useState(0)
+    const [shuffledOptions, setShuffledOptions] = useState<{ letter: string, text: string }[]>([])
 
     const loadQuestions = useCallback(async () => {
         if (!user) return
@@ -77,6 +78,7 @@ function PracticeContent() {
                 .from('questions')
                 .select('*')
                 .in('id', wrongIds)
+                .neq('option_a', 'N/A')
 
             if (subject !== 'All Subjects') qQuery = qQuery.eq('subject', subject)
             if (difficulty !== 'All Levels') qQuery = qQuery.eq('difficulty', difficulty)
@@ -86,7 +88,21 @@ function PracticeContent() {
                 setQuestions([...data as Question[]].sort(() => Math.random() - 0.5))
             }
         } else {
-            let query = supabase.from('questions').select('*')
+            // "Progress Memory": Exclude completely correct questions from normal mode
+            let correctQuery = supabase
+                .from('question_attempts')
+                .select('question_id')
+                .eq('student_id', user.id)
+                .eq('is_correct', true)
+
+            const { data: correctAttempts } = await correctQuery
+            const correctIds = correctAttempts ? Array.from(new Set(correctAttempts.map((a: { question_id: string }) => a.question_id))) : []
+
+            let query = supabase.from('questions').select('*').neq('option_a', 'N/A')
+            if (correctIds.length > 0) {
+                query = query.not('id', 'in', `(${correctIds.join(',')})`)
+            }
+
             if (subject !== 'All Subjects') query = query.eq('subject', subject)
             if (difficulty !== 'All Levels') query = query.eq('difficulty', difficulty)
             const { data } = await query.limit(200)
@@ -111,7 +127,17 @@ function PracticeContent() {
     }, [user])
 
     useEffect(() => {
-        if (questions[current]) checkBookmark(questions[current].id)
+        if (questions[current]) {
+            checkBookmark(questions[current].id)
+            const q = questions[current]
+            const options = [
+                { letter: 'A', text: q.option_a },
+                { letter: 'B', text: q.option_b },
+                { letter: 'C', text: q.option_c },
+                { letter: 'D', text: q.option_d }
+            ]
+            setShuffledOptions(options.sort(() => Math.random() - 0.5))
+        }
     }, [current, questions, checkBookmark])
 
     const handleSubmit = async () => {
@@ -168,8 +194,6 @@ function PracticeContent() {
         if (letter === selected && letter !== q?.correct_answer) return 'option-btn wrong'
         return 'option-btn'
     }
-
-    const optionTexts = q ? [q.option_a, q.option_b, q.option_c, q.option_d] : []
 
     const handleModeToggle = (newMode: 'normal' | 'wrong_only') => {
         setMode(newMode)
@@ -295,15 +319,15 @@ function PracticeContent() {
 
                             {/* Options */}
                             <div className="options-grid">
-                                {OPTION_LABELS.map((letter, i) => (
+                                {shuffledOptions.map((opt) => (
                                     <button
-                                        key={letter}
-                                        className={getOptionClass(letter)}
-                                        onClick={() => !submitted && setSelected(letter)}
+                                        key={opt.letter}
+                                        className={getOptionClass(opt.letter)}
+                                        onClick={() => !submitted && setSelected(opt.letter)}
                                         disabled={submitted}
                                     >
-                                        <span className="option-letter">{letter}</span>
-                                        <span>{optionTexts[i]}</span>
+                                        <span className="option-letter">{opt.letter}</span>
+                                        <span>{opt.text}</span>
                                     </button>
                                 ))}
                             </div>
@@ -317,6 +341,9 @@ function PracticeContent() {
                                         disabled={!selected}
                                     >
                                         Submit Answer
+                                    </button>
+                                    <button className="btn btn-ghost btn-sm" onClick={handleNext}>
+                                        Skip Question
                                     </button>
                                     <button className="btn btn-ghost btn-sm" onClick={handleBookmark}>
                                         {bookmarked ? '🔖 Bookmarked' : '+ Retry Later'}

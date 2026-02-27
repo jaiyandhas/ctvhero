@@ -346,6 +346,7 @@ a:hover {
   font-weight: 700;
   background: linear-gradient(135deg, var(--accent-light), #a78bfa);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -691,6 +692,7 @@ a:hover {
   line-height: 1.7;
   color: var(--text-secondary);
   margin-top: 16px;
+  white-space: pre-wrap;
 }
 
 .explanation-box strong {
@@ -918,6 +920,7 @@ a:hover {
   color: var(--text-primary);
   font-weight: 400;
   margin-bottom: 24px;
+  white-space: pre-wrap;
 }
 
 .options-grid {
@@ -973,6 +976,7 @@ a:hover {
   font-weight: 800;
   background: linear-gradient(135deg, var(--accent-light), #a78bfa);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
