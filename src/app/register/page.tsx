@@ -145,7 +145,7 @@ export default function RegisterPage() {
                 <div style={{ textAlign: 'center', marginTop: 20, fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.7 }}>
                     🍊 Built with orange juice &amp; poor decisions<br />
                     <span style={{ color: 'var(--accent-light)', fontWeight: 600 }}>Jaiyandh A S</span>
-                    <span> · 23CDR060</span>
+                    <span> · </span>
                 </div>
             </div>
         </div>
