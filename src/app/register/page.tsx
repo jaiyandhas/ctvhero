@@ -67,8 +67,8 @@ export default function RegisterPage() {
                     <div className="auth-logo-sub">CTV Practice Arena · GATE Prep</div>
                 </div>
 
-                <h2 className="auth-title">Create account</h2>
-                <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginBottom: 24 }}>
+                <h2 className="auth-title" style={{ fontWeight: 700, letterSpacing: '-0.02em', fontSize: '1.6rem' }}>Create account.</h2>
+                <p style={{ color: 'var(--text-secondary)', fontSize: 15, marginBottom: 32, fontWeight: 400 }}>
                     Join and start your CTV preparation journey
                 </p>
 
@@ -82,45 +82,41 @@ export default function RegisterPage() {
                 )}
 
                 <form onSubmit={handleRegister}>
-                    <div className="form-group">
-                        <label className="form-label">Full Name</label>
+                    <div className="form-group" style={{ marginBottom: 16 }}>
                         <input
-                            className="form-input"
+                            className="apple-input"
                             type="text"
-                            placeholder="Your full name"
+                            placeholder="Full Name"
                             value={formData.name}
                             onChange={e => setFormData(f => ({ ...f, name: e.target.value }))}
                             required
                             autoFocus
                         />
                     </div>
-                    <div className="form-group">
-                        <label className="form-label">Register Number <span style={{ color: 'var(--text-muted)' }}>(optional)</span></label>
+                    <div className="form-group" style={{ marginBottom: 16 }}>
                         <input
-                            className="form-input"
+                            className="apple-input"
                             type="text"
-                            placeholder="e.g. 23CDR060"
+                            placeholder="Register Number (Ex. 23CDR060)"
                             value={formData.registerNumber}
                             onChange={e => setFormData(f => ({ ...f, registerNumber: e.target.value }))}
                         />
                     </div>
-                    <div className="form-group">
-                        <label className="form-label">Email Address</label>
+                    <div className="form-group" style={{ marginBottom: 16 }}>
                         <input
-                            className="form-input"
+                            className="apple-input"
                             type="email"
-                            placeholder="your@kongu.edu"
+                            placeholder="Email Address"
                             value={formData.email}
                             onChange={e => setFormData(f => ({ ...f, email: e.target.value }))}
                             required
                         />
                     </div>
-                    <div className="form-group">
-                        <label className="form-label">Password</label>
+                    <div className="form-group" style={{ marginBottom: 32 }}>
                         <input
-                            className="form-input"
+                            className="apple-input"
                             type="password"
-                            placeholder="Min. 6 characters"
+                            placeholder="Password (Min. 6 characters)"
                             value={formData.password}
                             onChange={e => setFormData(f => ({ ...f, password: e.target.value }))}
                             required
@@ -128,24 +124,22 @@ export default function RegisterPage() {
                     </div>
                     <button
                         type="submit"
-                        className="btn btn-primary btn-full btn-lg"
+                        className="apple-btn"
                         disabled={loading}
-                        style={{ marginTop: 8 }}
                     >
-                        {loading ? <span className="spinner" /> : null}
+                        {loading ? <span className="spinner" style={{ width: 18, height: 18, borderWidth: 2, borderColor: 'rgba(0,0,0,0.1)', borderTopColor: '#000' }} /> : null}
                         {loading ? 'Creating account...' : 'Create Account'}
                     </button>
                 </form>
 
-                <div className="auth-switch">
+                <div className="auth-switch" style={{ marginTop: 24 }}>
                     Already have an account?{' '}
-                    <Link href="/login">Sign in</Link>
+                    <Link href="/login" style={{ fontWeight: 500, color: '#fff' }}>Sign in</Link>
                 </div>
 
-                <div style={{ textAlign: 'center', marginTop: 20, fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.7 }}>
+                <div style={{ textAlign: 'center', marginTop: 32, fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.7 }}>
                     🍊 Built with orange juice &amp; poor decisions<br />
-                    <span style={{ color: 'var(--accent-light)', fontWeight: 600 }}>Jaiyandh A S</span>
-                    <span> · </span>
+                    <span style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>Jaiyandh A S</span>
                 </div>
             </div>
         </div>

@@ -49,8 +49,8 @@ export default function LoginPage() {
                     <div className="auth-logo-sub">CTV Practice Arena · GATE Prep</div>
                 </div>
 
-                <h2 className="auth-title">Welcome back</h2>
-                <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginBottom: 24 }}>
+                <h2 className="auth-title" style={{ fontWeight: 700, letterSpacing: '-0.02em', fontSize: '1.6rem' }}>Welcome back.</h2>
+                <p style={{ color: 'var(--text-secondary)', fontSize: 15, marginBottom: 32, fontWeight: 400 }}>
                     Sign in to continue your practice
                 </p>
 
@@ -64,24 +64,22 @@ export default function LoginPage() {
                 )}
 
                 <form onSubmit={handleLogin}>
-                    <div className="form-group">
-                        <label className="form-label">Email Address</label>
+                    <div className="form-group" style={{ marginBottom: 16 }}>
                         <input
-                            className="form-input"
+                            className="apple-input"
                             type="email"
-                            placeholder="you@college.edu"
+                            placeholder="Email Address"
                             value={email}
                             onChange={e => setEmail(e.target.value)}
                             required
                             autoFocus
                         />
                     </div>
-                    <div className="form-group">
-                        <label className="form-label">Password</label>
+                    <div className="form-group" style={{ marginBottom: 32 }}>
                         <input
-                            className="form-input"
+                            className="apple-input"
                             type="password"
-                            placeholder="••••••••"
+                            placeholder="Password"
                             value={password}
                             onChange={e => setPassword(e.target.value)}
                             required
@@ -89,22 +87,21 @@ export default function LoginPage() {
                     </div>
                     <button
                         type="submit"
-                        className="btn btn-primary btn-full btn-lg"
+                        className="apple-btn"
                         disabled={loading}
-                        style={{ marginTop: 8 }}
                     >
-                        {loading ? <span className="spinner" /> : null}
+                        {loading ? <span className="spinner" style={{ width: 18, height: 18, borderWidth: 2, borderColor: 'rgba(0,0,0,0.1)', borderTopColor: '#000' }} /> : null}
                         {loading ? 'Signing in...' : 'Sign In'}
                     </button>
                 </form>
 
-                <div className="auth-switch">
+                <div className="auth-switch" style={{ marginTop: 24 }}>
                     Don&apos;t have an account?{' '}
-                    <Link href="/register">Create one</Link>
+                    <Link href="/register" style={{ fontWeight: 500, color: '#fff' }}>Create one</Link>
                 </div>
-                <div style={{ textAlign: 'center', marginTop: 20, fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.7 }}>
+                <div style={{ textAlign: 'center', marginTop: 32, fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.7 }}>
                     🍊 Built with orange juice &amp; poor decisions<br />
-                    <span style={{ color: 'var(--accent-light)', fontWeight: 600 }}>Jaiyandh A S</span>
+                    <span style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>Jaiyandh A S</span>
                 </div>
             </div>
         </div>

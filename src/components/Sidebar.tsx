@@ -119,7 +119,6 @@ export default function Sidebar() {
                     <span>🍊 Built with orange juice & poor decisions</span>
                     <br />
                     <span style={{ color: 'var(--accent-light)', fontWeight: 600 }}>Jaiyandh A S</span>
-                    <span style={{ color: 'var(--text-muted)' }}> · 23CDR060</span>
                 </div>
             </div>
         </aside>

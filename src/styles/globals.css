@@ -952,17 +952,87 @@ a:hover {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: radial-gradient(ellipse at top, #1a0a2e 0%, var(--bg-primary) 60%);
+  background: radial-gradient(circle at 50% 0%, rgba(108, 99, 255, 0.15), transparent 60%),
+    radial-gradient(circle at 80% 80%, rgba(167, 139, 250, 0.1), transparent 50%),
+    var(--bg-primary);
+  overflow: hidden;
 }
 
 .auth-card {
   width: 100%;
-  max-width: 420px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
-  padding: 32px;
-  box-shadow: var(--shadow-card);
+  max-width: 400px;
+  background: rgba(22, 22, 29, 0.4);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  padding: 48px 32px;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
+  animation: appleScaleUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0;
+  transform: translateY(20px) scale(0.98);
+}
+
+@keyframes appleScaleUp {
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.apple-input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 16px 20px;
+  font-size: 16px;
+  color: var(--text-primary);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+}
+
+.apple-input:focus {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.03);
+}
+
+.apple-input::placeholder {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.apple-btn {
+  width: 100%;
+  background: #ffffff;
+  color: #000000;
+  border-radius: 999px;
+  padding: 16px;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.apple-btn:hover:not(:disabled) {
+  transform: scale(1.02);
+  background: #f0f0f0;
+}
+
+.apple-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.apple-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .auth-logo {
