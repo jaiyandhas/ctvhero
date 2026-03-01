@@ -50,9 +50,36 @@ function PracticeContent() {
     const [correctCount, setCorrectCount] = useState(0)
     const [shuffledOptions, setShuffledOptions] = useState<{ letter: string, text: string }[]>([])
 
-    const loadQuestions = useCallback(async () => {
+    const loadQuestions = useCallback(async (forceFresh?: boolean | React.MouseEvent) => {
         if (!user) return
         setLoading(true)
+
+        const isForceFresh = forceFresh === true;
+        const sessionKey = `practice_session_${user.id}`
+
+        if (!isForceFresh) {
+            const saved = sessionStorage.getItem(sessionKey)
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved)
+                    if (data.subject === subject && data.difficulty === difficulty && data.mode === mode) {
+                        setQuestions(data.questions || [])
+                        setCurrent(data.current || 0)
+                        setSelected(data.selected || null)
+                        setSubmitted(data.submitted || false)
+                        if (typeof data.answeredCount === 'number') setAnsweredCount(data.answeredCount)
+                        if (typeof data.correctCount === 'number') setCorrectCount(data.correctCount)
+                        if (data.shuffledOptions) setShuffledOptions(data.shuffledOptions)
+                        setLoading(false)
+                        return
+                    }
+                } catch (e) {
+                    console.error('Failed to parse practice session state', e)
+                }
+            }
+        }
+
+        sessionStorage.removeItem(sessionKey)
         setCurrent(0)
         setSelected(null)
         setSubmitted(false)
@@ -115,6 +142,18 @@ function PracticeContent() {
 
     useEffect(() => { loadQuestions() }, [loadQuestions])
 
+    // Save session memory whenever relevant state changes
+    useEffect(() => {
+        if (!user || loading || questions.length === 0) return
+        const sessionKey = `practice_session_${user.id}`
+        const sessionData = {
+            subject, difficulty, mode,
+            questions, current, selected, submitted,
+            answeredCount, correctCount, shuffledOptions
+        }
+        sessionStorage.setItem(sessionKey, JSON.stringify(sessionData))
+    }, [user, loading, questions, current, selected, submitted, answeredCount, correctCount, shuffledOptions, subject, difficulty, mode])
+
     const checkBookmark = useCallback(async (qId: string) => {
         if (!user) return
         const { data } = await supabase
@@ -129,14 +168,23 @@ function PracticeContent() {
     useEffect(() => {
         if (questions[current]) {
             checkBookmark(questions[current].id)
+
             const q = questions[current]
-            const options = [
-                { letter: 'A', text: q.option_a },
-                { letter: 'B', text: q.option_b },
-                { letter: 'C', text: q.option_c },
-                { letter: 'D', text: q.option_d }
-            ]
-            setShuffledOptions(options.sort(() => Math.random() - 0.5))
+            setShuffledOptions(prev => {
+                // Preserve option order if already shuffled for this specific question (e.g. from session storage)
+                const hasMatch = prev.length === 4 &&
+                    prev.find(p => p.letter === 'A')?.text === q.option_a &&
+                    prev.find(p => p.letter === 'B')?.text === q.option_b
+                if (hasMatch) return prev
+
+                const options = [
+                    { letter: 'A', text: q.option_a },
+                    { letter: 'B', text: q.option_b },
+                    { letter: 'C', text: q.option_c },
+                    { letter: 'D', text: q.option_d }
+                ]
+                return options.sort(() => Math.random() - 0.5)
+            })
         }
     }, [current, questions, checkBookmark])
 
@@ -256,7 +304,7 @@ function PracticeContent() {
                     >
                         {DIFFICULTIES.map(d => <option key={d}>{d}</option>)}
                     </select>
-                    <button className="btn btn-secondary btn-sm" onClick={loadQuestions}>
+                    <button className="btn btn-secondary btn-sm" onClick={() => loadQuestions(true)}>
                         🔀 Shuffle
                     </button>
                     {answeredCount > 0 && (
@@ -384,7 +432,7 @@ function PracticeContent() {
                                             {bookmarked ? '🔖 Bookmarked' : '🔖 Retry Later'}
                                         </button>
                                         {current >= questions.length - 1 && (
-                                            <button className="btn btn-ghost btn-sm" onClick={loadQuestions}>
+                                            <button className="btn btn-ghost btn-sm" onClick={() => loadQuestions(true)}>
                                                 Restart 🔄
                                             </button>
                                         )}
